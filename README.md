@@ -1,10 +1,10 @@
 # Quaternion log chart: 10^q, log10(q), and the Hopf structure
 
-Three small PyTorch scripts that extend `10^x` and `log10(x)` to the quaternions and check
+Four small PyTorch scripts that extend `10^x` and `log10(x)` to the quaternions and check
 what the log chart does geometrically. A decade, the step `s -> s + 1` in `s = log10|q|`,
-turns out to be a scaling of flat quaternion space by 10, and the structure it induces on
-the quotient is the locally conformally hyperkahler structure of the Hopf manifold
-`S^1 x S^3`. Each claim below is tested numerically.
+scales flat quaternion space by 10, and the structure it induces on the quotient is the
+locally conformally hyperkahler structure of the Hopf manifold `S^1 x S^3`. Each claim
+below is tested numerically.
 
 ## Files
 
@@ -13,9 +13,11 @@ the quotient is the locally conformally hyperkahler structure of the Hopf manifo
 | `quaternion_log10.py` | `exp10(q)`, `log10(q)` and `qmul` for quaternions, with six identity checks |
 | `quaternion_geometry.py` | Pulls the flat metric back through the log chart; checks the conformal cylinder form, the factor of 100 per decade, and the hypercomplex structure |
 | `quaternion_lck.py` | Checks `d(Omega) = theta ^ Omega` for the rescaled Kahler forms of I, J, K, and the period of `theta` |
+| `quaternion_curvature.py` | Computes Christoffel symbols, Riemann and Ricci tensors from the metric alone, to confirm the chart gives `R x S^3` |
 
-Import chain: `quaternion_lck.py` imports `quaternion_geometry.py`, which imports
-`quaternion_log10.py`. Keep all three in one folder under these exact names.
+Import chain: `quaternion_geometry.py` imports `quaternion_log10.py`. Both
+`quaternion_lck.py` and `quaternion_curvature.py` import from those two. Keep all four in
+one folder under these exact names.
 
 ## Setup
 
@@ -32,9 +34,10 @@ Tested on Python 3.12 and 3.14. CPU only.
 python quaternion_log10.py
 python quaternion_geometry.py
 python quaternion_lck.py
+python quaternion_curvature.py
 ```
 
-Each finishes in seconds. Every check prints `[ok ]` when it passes. Two lines are
+Each finishes in seconds. Every check prints `[ok ]` when it passes. Some lines are
 intentionally different: `[wrap]` and `[differ]` in `quaternion_log10.py` mark places where
 an identity is expected to fail, and `[varies]` in `quaternion_geometry.py` marks a
 quantity that is expected to be non-constant.
@@ -57,13 +60,14 @@ The log chart is `y = log10(q) = (s, w')` with `s = log10|q|`.
 - **Logarithms of -1:** there is a whole sphere of them, one per unit axis. Three axes are checked.
 - **Gradients:** both functions are differentiable through PyTorch autograd.
 - **Metric:** in log coordinates the pulled-back flat metric is `(10^s ln10)^2` times a cylinder-type form, and one decade scales it by exactly 100.
+- **Curvature:** computed from the metric alone, the pullback of the flat metric has Ricci scalar 0. Dividing by `10^(2s)` gives Ricci scalar 6 with Ricci eigenvalues `(0, 2, 2, 2)`, which is `R x S^3` with a unit round `S^3`. Dividing by `(10^s ln10)^2` instead gives `6 (ln10)^2`, an `S^3` of radius `1/ln10`.
 - **Hypercomplex structure:** left multiplication by i, j, k gives I, J, K with `I^2 = J^2 = K^2 = -1` and `IJ = K`. All three are orthogonal for the flat metric.
 - **The chart is not hyperholomorphic:** the pulled-back I squares to -1 but varies from point to point.
 - **Locally conformally hyperkahler:** with `Omega = 10^(-2s) * omega`, the identity `d(Omega) = theta ^ Omega` holds for I, J and K with the same `theta = -2 ln10 ds`, while `d(Omega)` itself is nonzero. `Omega` is invariant under the decade shift, so it descends to `S^1 x S^3`.
 - **Period:** `theta` integrates to `-2 ln10` around one decade loop, so it is closed but not exact on the quotient.
 
-All agreement is at floating-point level (errors near 1e-15 in float64), at random points
-inside the principal branch.
+All agreement is at floating-point level (errors between 1e-16 and 1e-12 in float64), at
+random points inside the principal branch.
 
 ## What has not been shown
 
@@ -73,5 +77,5 @@ inside the principal branch.
 
 ## Possible next steps
 
-- Check Weyl-closedness of the conformal class in `quaternion_lck.py`.
-- Test the structure near the branch boundary, where the chart degenerates.
+- Test the structure near the branch boundary, where the tangential part of the metric degenerates (the factor `(sin(theta)/theta)^2` goes to zero at `theta = pi`).
+- Add a `requirements.txt` and a small test runner.
