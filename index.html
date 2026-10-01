@@ -30,20 +30,18 @@ button{font:inherit;background:none;color:var(--fg);border:1px solid var(--mut);
 <div class="row">
   <span>s = log<sub>10</sub>|q| offset: <span id="clock">0.000</span></span>
   <label>sec / decade <input id="per" type="range" min="3" max="20" value="10"></label>
-  <label>slice tilt <input id="tilt" type="range" min="0" max="100" value="30"></label>
   <button id="pp">pause</button>
 </div>
 <script>
 const cv=document.getElementById('c'),ctx=cv.getContext('2d'),N=cv.width;
 const img=ctx.createImageData(N,N),D=img.data;
-const per=document.getElementById('per'),tilt=document.getElementById('tilt'),pp=document.getElementById('pp');
+const per=document.getElementById('per'),pp=document.getElementById('pp');
 const clock=document.getElementById('clock'),fill=document.getElementById('fill');
-let paused=false,T=0,last=null,phase=0;
+let paused=false,T=0,last=null;
 pp.onclick=()=>{paused=!paused;pp.textContent=paused?'play':'pause';last=null};
-function draw(t,ph){
-  // unit imaginary u: the slice is span(1,u); it drifts on S^2 so the S^3 colours move
-  const a=1.0+0.7*Math.sin(ph),b=ph*0.8;
-  const u=[Math.sin(a)*Math.cos(b),Math.sin(a)*Math.sin(b),Math.cos(a)];
+function draw(t){
+  // fixed slice span(1,u); every slice through 0 looks the same (SO(3) symmetry)
+  const u=[0.6,0.64,0.48];
   const half=N/2;
   for(let j=0;j<N;j++){
     const y=(half-j)/half*3;
@@ -67,9 +65,9 @@ function draw(t,ph){
 function loop(now){
   if(last===null)last=now;
   const dt=(now-last)/1000;last=now;
-  if(!paused){T+=dt/per.value;phase+=dt*tilt.value/100*0.8}
+  if(!paused)T+=dt/per.value;
   const t=T-Math.floor(T);
-  draw(t,phase);
+  draw(t);
   clock.textContent=t.toFixed(3);fill.style.width=(t*100)+'%';
   requestAnimationFrame(loop);
 }
