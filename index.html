@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Powers of Ten, Quaternion Edition</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f1ea;--fg:#1d1d1b;--mut:#6b675e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101012;--fg:#ece8df;--mut:#9a958a}}
+:root[data-theme="dark"]{--bg:#101012;--fg:#ece8df;--mut:#9a958a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 Georgia,"Times New Roman",serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+h1{font-size:1.25rem;font-weight:normal;margin:4px 0 0;letter-spacing:.02em}
+p.sub{margin:2px 0 12px;color:var(--mut);font-size:.85rem;text-align:center;max-width:36em}
+canvas{width:min(92vw,520px);aspect-ratio:1;border-radius:4px;background:#000;image-rendering:auto}
+.row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:12px;font-size:.85rem;color:var(--mut)}
+input[type=range]{width:140px}
+button{font:inherit;background:none;color:var(--fg);border:1px solid var(--mut);border-radius:3px;padding:3px 10px;cursor:pointer}
+#clock{font-variant-numeric:tabular-nums;color:var(--fg)}
+.bar{width:min(92vw,520px);height:3px;background:var(--mut);opacity:.35;margin-top:10px;position:relative}
+#fill{position:absolute;left:0;top:0;height:3px;background:var(--fg);width:0}
+</style>
+</head>
+<body>
+<h1>Powers of Ten, quaternion edition</h1>
+<p class="sub">A slice of H zooming by 10&times; each loop. The pattern depends only on q mod 10, so the end frame is the start frame: a loop around the S&sup1; of S&sup1;&times;S&sup3;.</p>
+<canvas id="c" width="420" height="420"></canvas>
+<div class="bar"><div id="fill"></div></div>
+<div class="row">
+  <span>s = log<sub>10</sub>|q| offset: <span id="clock">0.000</span></span>
+  <label>sec / decade <input id="per" type="range" min="3" max="20" value="10"></label>
+  <label>slice tilt <input id="tilt" type="range" min="0" max="100" value="30"></label>
+  <button id="pp">pause</button>
+</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d'),N=cv.width;
+const img=ctx.createImageData(N,N),D=img.data;
+const per=document.getElementById('per'),tilt=document.getElementById('tilt'),pp=document.getElementById('pp');
+const clock=document.getElementById('clock'),fill=document.getElementById('fill');
+let paused=false,T=0,last=null,phase=0;
+pp.onclick=()=>{paused=!paused;pp.textContent=paused?'play':'pause';last=null};
+function draw(t,ph){
+  // unit imaginary u: the slice is span(1,u); it drifts on S^2 so the S^3 colours move
+  const a=1.0+0.7*Math.sin(ph),b=ph*0.8;
+  const u=[Math.sin(a)*Math.cos(b),Math.sin(a)*Math.sin(b),Math.cos(a)];
+  const half=N/2;
+  for(let j=0;j<N;j++){
+    const y=(half-j)/half*3;
+    for(let i=0;i<N;i++){
+      const x=(i-half)/half*3;
+      const r=Math.hypot(x,y),k=(j*N+i)*4;
+      if(r<1e-9){D[k]=D[k+1]=D[k+2]=0;D[k+3]=255;continue}
+      const s=Math.log10(r)+t,fs=s-Math.floor(s);
+      const th=Math.atan2(Math.abs(y),x);            // angle on S^3, 0..pi
+      const sg=y<0?-1:1;
+      const cell=(Math.floor(fs*4)+Math.floor(th*6/Math.PI))&1;
+      const d=Math.min(fs,1-fs),ring=Math.exp(-Math.pow(d*r*60,2));  // decade ring, constant pixel width
+      const lit=(cell?1:0.42)*(0.65+0.35*Math.cos(th));
+      let R=(0.5+0.5*sg*u[0])*lit,G=(0.5+0.5*sg*u[1])*lit,B=(0.5+0.5*sg*u[2])*lit;
+      R+=ring*0.9;G+=ring*0.9;B+=ring*0.9;
+      D[k]=Math.min(255,R*255);D[k+1]=Math.min(255,G*255);D[k+2]=Math.min(255,B*255);D[k+3]=255;
+    }
+  }
+  ctx.putImageData(img,0,0);
+}
+function loop(now){
+  if(last===null)last=now;
+  const dt=(now-last)/1000;last=now;
+  if(!paused){T+=dt/per.value;phase+=dt*tilt.value/100*0.8}
+  const t=T-Math.floor(T);
+  draw(t,phase);
+  clock.textContent=t.toFixed(3);fill.style.width=(t*100)+'%';
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
